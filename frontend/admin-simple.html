@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - NYC Taxi Explorer (Mock)</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Quick fixes for demo */
+        .admin-nav {
+            background: #000;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .login-container input {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .login-container button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .login-container button:hover {
+            background: #333;
+        }
+        .error-message {
+            color: red;
+            margin: 1rem 0;
+        }
+        .success-message {
+            color: green;
+            margin: 1rem 0;
+        }
+        .demo-badge {
+            background: #ff6b6b;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" style="display: block;">
+            <div class="login-container">
+                <h2>🚕 Admin Login</h2>
+                <div class="demo-badge">DEMO MODE - No Node.js required</div>
+                <p style="color: #666; margin: 1rem 0;">Use: admin / admin123</p>
+                <div id="login-error" class="error-message" style="display: none;"></div>
+                <div>
+                    <label>Username:</label>
+                    <input type="text" id="username" value="admin">
+                </div>
+                <div>
+                    <label>Password:</label>
+                    <input type="password" id="password" value="admin123">
+                </div>
+                <button onclick="handleLogin()">Login</button>
+                <p style="margin-top: 2rem; font-size: 0.9rem; color: #999; text-align: center;">
+                    This is a demo version with mock data. No backend required.
+                </p>
+            </div>
+        </div>
+
+        <!-- Admin Panel (hidden initially) -->
+        <div id="admin-panel" style="display: none;">
+            <nav class="admin-nav">
+                <div class="nav-brand">🚕 Admin Panel <span class="demo-badge">MOCK DATA</span></div>
+                <div class="nav-user">
+                    <span id="adminUsername">Admin</span>
+                    <button onclick="logout()" class="logout-btn" style="margin-left: 1rem; padding: 0.5rem 1rem; background: #ff6b6b; color: white; border: none; border-radius: 4px; cursor: pointer;">Logout</button>
+                </div>
+            </nav>
+
+            <div class="admin-container" style="display: flex;">
+                <aside class="admin-sidebar" style="width: 250px; background: white; border-right: 1px solid #ddd; min-height: calc(100vh - 60px);">
+                    <ul class="sidebar-menu" style="list-style: none; padding: 1rem;">
+                        <li onclick="showSection('dashboard')" class="active" style="padding: 1rem; cursor: pointer; background: #f0f0f0; margin-bottom: 0.5rem; border-radius: 4px;">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </li>
+                        <li onclick="showSection('trips')" style="padding: 1rem; cursor: pointer; margin-bottom: 0.5rem; border-radius: 4px;">
+                            <i class="fas fa-taxi"></i> Trips
+                        </li>
+                        <li onclick="showSection('zones')" style="padding: 1rem; cursor: pointer; margin-bottom: 0.5rem; border-radius: 4px;">
+                            <i class="fas fa-map-marker-alt"></i> Zones
+                        </li>
+                        <li onclick="showSection('users')" style="padding: 1rem; cursor: pointer; margin-bottom: 0.5rem; border-radius: 4px;">
+                            <i class="fas fa-users"></i> Users
+                        </li>
+                        <li onclick="showSection('audit')" style="padding: 1rem; cursor: pointer; margin-bottom: 0.5rem; border-radius: 4px;">
+                            <i class="fas fa-history"></i> Audit Logs
+                        </li>
+                    </ul>
+                </aside>
+
+                <main class="admin-content" style="flex: 1; padding: 2rem;">
+                    <!-- Dashboard Section -->
+                    <section id="dashboard-section" class="admin-section active">
+                        <h2>System Dashboard (Mock Data)</h2>
+                        <div class="stats-grid" id="systemStats" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;">
+                            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <div class="stat-label">Total Trips</div>
+                                <div class="stat-value" style="font-size: 2rem; font-weight: bold;">6,518,458</div>
+                            </div>
+                            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <div class="stat-label">Total Revenue</div>
+                                <div class="stat-value" style="font-size: 2rem; font-weight: bold;">$125.4M</div>
+                            </div>
+                            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <div class="stat-label">Avg Fare</div>
+                                <div class="stat-value" style="font-size: 2rem; font-weight: bold;">$19.25</div>
+                            </div>
+                            <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <div class="stat-label">Avg Distance</div>
+                                <div class="stat-value" style="font-size: 2rem; font-weight: bold;">3.2 mi</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem;">
+                            <h3>Database Size</h3>
+                            <canvas id="dbSizeChart" style="max-height: 300px;"></canvas>
+                        </div>
+                        
+                        <div style="background: #e8f5e8; padding: 1rem; border-radius: 8px; border-left: 4px solid #27ae60;">
+                            <strong>✅ System Health:</strong> All systems operational (Mock Mode)
+                        </div>
+                    </section>
+
+                    <!-- Trips Section -->
+                    <section id="trips-section" class="admin-section">
+                        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h2>Trip Management</h2>
+                            <button onclick="alert('Demo: Add trip functionality')" class="btn-primary" style="background: #4a90e2; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer;">
+                                <i class="fas fa-plus"></i> Add Trip (Demo)
+                            </button>
+                        </div>
+                        
+                        <div class="filters-bar" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                            <input type="text" placeholder="Search trips..." style="flex: 1; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                            <select style="padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px;">
+                                <option>All Boroughs</option>
+                                <option>Manhattan</option>
+                                <option>Brooklyn</option>
+                                <option>Queens</option>
+                            </select>
+                        </div>
+                        
+                        <div class="table-container" style="background: white; border-radius: 8px; overflow: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #000; color: white;">
+                                        <th style="padding: 1rem;">ID</th>
+                                        <th style="padding: 1rem;">Pickup Time</th>
+                                        <th style="padding: 1rem;">Pickup Zone</th>
+                                        <th style="padding: 1rem;">Dropoff Zone</th>
+                                        <th style="padding: 1rem;">Distance</th>
+                                        <th style="padding: 1rem;">Fare</th>
+                                        <th style="padding: 1rem;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tripsTableBody">
+                                    <!-- Filled by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Zones Section -->
+                    <section id="zones-section" class="admin-section">
+                        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h2>Zone Management</h2>
+                            <button onclick="alert('Demo: Add zone functionality')" class="btn-primary" style="background: #4a90e2; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer;">
+                                <i class="fas fa-plus"></i> Add Zone (Demo)
+                            </button>
+                        </div>
+                        
+                        <div class="table-container" style="background: white; border-radius: 8px; overflow: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #000; color: white;">
+                                        <th style="padding: 1rem;">ID</th>
+                                        <th style="padding: 1rem;">Borough</th>
+                                        <th style="padding: 1rem;">Zone Name</th>
+                                        <th style="padding: 1rem;">Service Zone</th>
+                                        <th style="padding: 1rem;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="zonesTableBody">
+                                    <!-- Filled by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Users Section -->
+                    <section id="users-section" class="admin-section">
+                        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                            <h2>User Management</h2>
+                            <button onclick="alert('Demo: Add user functionality')" class="btn-primary" style="background: #4a90e2; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 4px; cursor: pointer;">
+                                <i class="fas fa-plus"></i> Add User (Demo)
+                            </button>
+                        </div>
+                        
+                        <div class="table-container" style="background: white; border-radius: 8px; overflow: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #000; color: white;">
+                                        <th style="padding: 1rem;">ID</th>
+                                        <th style="padding: 1rem;">Username</th>
+                                        <th style="padding: 1rem;">Email</th>
+                                        <th style="padding: 1rem;">Role</th>
+                                        <th style="padding: 1rem;">Created</th>
+                                        <th style="padding: 1rem;">Last Login</th>
+                                        <th style="padding: 1rem;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <!-- Filled by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Audit Section -->
+                    <section id="audit-section" class="admin-section">
+                        <h2>Audit Logs</h2>
+                        <div class="table-container" style="background: white; border-radius: 8px; overflow: auto; margin-top: 1rem;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #000; color: white;">
+                                        <th style="padding: 1rem;">Time</th>
+                                        <th style="padding: 1rem;">User</th>
+                                        <th style="padding: 1rem;">Action</th>
+                                        <th style="padding: 1rem;">Table</th>
+                                        <th style="padding: 1rem;">Record ID</th>
+                                        <th style="padding: 1rem;">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditTableBody">
+                                    <!-- Filled by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/mockData.js"></script>
+    <script>
+        // State
+        let loggedIn = false;
+
+        // Login handler
+        function handleLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'admin' && password === 'admin123') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                document.getElementById('adminUsername').textContent = username;
+                loggedIn = true;
+                loadAllData();
+            } else {
+                const errorDiv = document.getElementById('login-error');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Invalid credentials. Use admin/admin123';
+            }
+        }
+
+        // Logout
+        function logout() {
+            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('admin-panel').style.display = 'none';
+            loggedIn = false;
+        }
+
+        // Show section
+        function showSection(section) {
+            // Update menu active state
+            document.querySelectorAll('.sidebar-menu li').forEach(li => {
+                li.classList.remove('active');
+                li.style.background = 'transparent';
+            });
+            event.currentTarget.classList.add('active');
+            event.currentTarget.style.background = '#f0f0f0';
+            
+            // Show section
+            document.querySelectorAll('.admin-section').forEach(s => {
+                s.classList.remove('active');
+                s.style.display = 'none';
+            });
+            document.getElementById(section + '-section').classList.add('active');
+            document.getElementById(section + '-section').style.display = 'block';
+        }
+
+        // Load all data
+        function loadAllData() {
+            loadTrips();
+            loadZones();
+            loadUsers();
+            loadAuditLogs();
+            setupCharts();
+        }
+
+        // Load trips
+        function loadTrips() {
+            const trips = mockData.trips;
+            const tbody = document.getElementById('tripsTableBody');
+            
+            tbody.innerHTML = trips.map(trip => `
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${trip.trip_id}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${trip.pickup_datetime}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${trip.pickup_zone}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${trip.dropoff_zone}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${trip.trip_distance} mi</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">$${trip.total_amount}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">
+                        <button onclick="alert('Demo: Edit trip ${trip.trip_id}')" style="background: #f39c12; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; margin-right: 0.25rem;">Edit</button>
+                        <button onclick="alert('Demo: Delete trip ${trip.trip_id}')" style="background: #e74c3c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Load zones
+        function loadZones() {
+            const zones = mockData.zones.slice(0, 10); // Show first 10 zones
+            const tbody = document.getElementById('zonesTableBody');
+            
+           
