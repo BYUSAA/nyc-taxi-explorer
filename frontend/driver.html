@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - NYC Taxi</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .driver-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .driver-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .online-toggle {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .online-toggle.offline {
+            background: #e74c3c;
+        }
+        
+        .ride-request {
+            background: white;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .accept-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .decline-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .earnings-chart {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .map-placeholder {
+            background: #ecf0f1;
+            height: 300px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">🚕 NYC Taxi - Driver Portal</div>
+        <div class="nav-links">
+            <a href="index.html">Dashboard</a>
+            <a href="driver.html" class="active">Driver</a>
+            <a href="client.html">Client</a>
+            <a href="admin.html">Admin</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="section-header">
+            <h1>Driver Dashboard</h1>
+            <button id="onlineToggle" class="online-toggle">🟢 ONLINE</button>
+        </div>
+        
+        <!-- Driver Stats -->
+        <div class="driver-stats">
+            <div class="driver-card">
+                <i class="fas fa-dollar-sign fa-2x"></i>
+                <h3>Today's Earnings</h3>
+                <h2 id="todayEarnings">$248.50</h2>
+                <small>↑ 18% from yesterday</small>
+            </div>
+            <div class="driver-card">
+                <i class="fas fa-taxi fa-2x"></i>
+                <h3>Trips Today</h3>
+                <h2 id="tripsToday">12</h2>
+                <small>↑ 3 more than yesterday</small>
+            </div>
+            <div class="driver-card">
+                <i class="fas fa-star fa-2x"></i>
+                <h3>Rating</h3>
+                <h2 id="driverRating">4.9</h2>
+                <small>⭐ 128 ratings</small>
+            </div>
+            <div class="driver-card">
+                <i class="fas fa-clock fa-2x"></i>
+                <h3>Hours Online</h3>
+                <h2 id="hoursOnline">6.5</h2>
+                <small>$38.23/hour</small>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <!-- Map Section -->
+            <div class="chart-card">
+                <h3>📍 Your Location (Live)</h3>
+                <div class="map-placeholder">
+                    <div style="text-align: center">
+                        <i class="fas fa-map-marked-alt fa-3x"></i>
+                        <p>Live GPS Tracking Active</p>
+                        <p><small>Current: 40.7128° N, 74.0060° W</small></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ride Requests -->
+            <div class="chart-card">
+                <h3>🚖 Live Ride Requests</h3>
+                <div id="rideRequests">
+                    <!-- Dynamic ride requests will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <!-- Earnings Chart -->
+            <div class="chart-card">
+                <h3>📊 Weekly Earnings</h3>
+                <canvas id="driverEarningsChart"></canvas>
+            </div>
+
+            <!-- Recent Trips -->
+            <div class="chart-card">
+                <h3>📜 Recent Trips</h3>
+                <div id="recentTripsList" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Dynamic trips will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Driver Tips -->
+        <div class="insights-section">
+            <h2>💡 Driver Tips</h2>
+            <div class="insights-grid" id="driverTips">
+                <div class="insight-card">
+                    <div class="insight-title">Rush Hour Premium</div>
+                    <p>Drive 7-9 AM and 5-7 PM for 18% higher earnings</p>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Airport Runs</div>
+                    <p>JFK trips average $52 - 3x higher than city trips</p>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-title">Weekend Strategy</div>
+                    <p>Work late nights Fri/Sat for best surge pricing</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        // Driver Dashboard Logic
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDriverData();
+            setupDriverEvents();
+        });
+
+        let isOnline = true;
+        
+        function setupDriverEvents() {
+            const toggleBtn = document.getElementById('onlineToggle');
+            toggleBtn.addEventListener('click', function() {
+                isOnline = !isOnline;
+                if (isOnline) {
+                    this.textContent = '🟢 ONLINE';
+                    this.classList.remove('offline');
+                } else {
+                    this.textContent = '🔴 OFFLINE';
+                    this.classList.add('offline');
+                }
+            });
+        }
+
+        function loadDriverData() {
+            // Load mock driver data
+            loadRideRequests();
+            loadRecentTrips();
+            createEarningsChart();
+        }
+
+        function loadRideRequests() {
+            const requests = [
+                {
+                    id: 1,
+                    pickup: '123 Main St, Manhattan',
+                    dropoff: '456 Park Ave',
+                    distance: '3.2 mi',
+                    fare: 24.50,
+                    eta: '5 mins'
+                },
+                {
+                    id: 2,
+                    pickup: '789 Broadway',
+                    dropoff: '321 5th Ave',
+                    distance: '2.1 mi',
+                    fare: 18.00,
+                    eta: '3 mins'
+                },
+                {
+                    id: 3,
+                    pickup: 'JFK Airport, Terminal 4',
+                    dropoff: 'Times Square',
+                    distance: '15.8 mi',
+                    fare: 65.00,
+                    eta: '12 mins'
+                }
+            ];
+
+            const container = document.getElementById('rideRequests');
+            container.innerHTML = requests.map(req => `
+                <div class="ride-request">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <strong>$${req.fare}</strong>
+                        <span>${req.eta} away</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <div><small>📍 FROM: ${req.pickup}</small></div>
+                        <div><small>🏁 TO: ${req.dropoff}</small></div>
+                        <div><small>📏 ${req.distance}</small></div>
+                    </div>
+                    <div>
+                        <button class="accept-btn" onclick="acceptRide(${req.id})">✓ Accept</button>
+                        <button class="decline-btn" onclick="declineRide(${req.id})">✗ Decline</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadRecentTrips() {
+            const trips = [
+                { time: '2:30 PM', route: 'Times Square → JFK', fare: 52.50, tip: 8.50 },
+                { time: '1:15 PM', route: 'Chelsea → Upper East', fare: 18.00, tip: 3.60 },
+                { time: '12:00 PM', route: 'Wall St → Brooklyn', fare: 12.50, tip: 2.50 },
+                { time: '10:45 AM', route: 'Central Park → Madison', fare: 21.00, tip: 4.20 }
+            ];
+
+            const container = document.getElementById('recentTripsList');
+            container.innerHTML = trips.map(trip => `
+                <div style="padding: 10px; border-bottom: 1px solid #ecf0f1;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <strong>${trip.route}</strong>
+                        <span>$${trip.fare}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; color: #7f8c8d;">
+                        <small>${trip.time}</small>
+                        <small>Tip: $${trip.tip}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function createEarningsChart() {
+            const ctx = document.getElementById('driverEarningsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Daily Earnings ($)',
+                        data: [180, 210, 195, 235, 248, 290, 275],
+                        borderColor: '#27ae60',
+                        backgroundColor: 'rgba(39,174,96,0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function acceptRide(id) {
+            alert(`Ride #${id} accepted! Navigating to pickup...`);
+        }
+
+        function declineRide(id) {
+            alert(`Ride #${id} declined`);
+        }
+    </script>
+</body>
+</html>
