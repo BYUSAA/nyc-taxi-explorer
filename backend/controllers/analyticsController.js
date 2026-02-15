@@ -656,6 +656,4 @@ const analyticsController = {
                         airport_distance: `${airport.avg_distance} mi`
                     },
                     interpretation: 'Airport trips are a high-value segment, commanding significantly higher fares. Drivers should prioritize positioning near airports during peak flight times.',
-                    actionable_tip: 'Create dedicated airport queues and consider premium pricing for airport pickups to capitalize on this lucrative segment.'
-                });
-            }
+                    actionable_tip: 'Create dedicated airport queues and consider premium pricing for airport
