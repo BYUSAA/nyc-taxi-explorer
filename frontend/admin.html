@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - NYC Taxi Explorer</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="admin-body">
+    <nav class="admin-nav">
+        <div class="nav-brand">🚕 Admin Panel</div>
+        <div class="nav-user">
+            <span id="adminUsername">Admin</span>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <aside class="admin-sidebar">
+            <ul class="sidebar-menu">
+                <li class="active" onclick="showSection('dashboard')">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </li>
+                <li onclick="showSection('trips')">
+                    <i class="fas fa-taxi"></i> Trips
+                </li>
+                <li onclick="showSection('zones')">
+                    <i class="fas fa-map-marker-alt"></i> Zones
+                </li>
+                <li onclick="showSection('users')">
+                    <i class="fas fa-users"></i> Users
+                </li>
+                <li onclick="showSection('audit')">
+                    <i class="fas fa-history"></i> Audit Logs
+                </li>
+                <li onclick="showSection('database')">
+                    <i class="fas fa-database"></i> Database
+                </li>
+            </ul>
+        </aside>
+
+        <main class="admin-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="admin-section active">
+                <h2>System Dashboard</h2>
+                <div class="stats-grid" id="systemStats">
+                    <div class="stat-card loading">Loading...</div>
+                </div>
+                
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3>Database Size</h3>
+                        <canvas id="dbSizeChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Recent Activity</h3>
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="health-check">
+                    <h3>System Health</h3>
+                    <div id="healthStatus" class="health-status">Checking...</div>
+                </div>
+            </section>
+
+            <!-- Trips Management Section -->
+            <section id="trips-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Trip Management</h2>
+                    <button onclick="showAddTripModal()" class="btn-primary">
+                        <i class="fas fa-plus"></i> Add Trip
+                    </button>
+                </div>
+                
+                <div class="filters-bar">
+                    <input type="text" id="tripSearch" placeholder="Search trips..." onkeyup="searchTrips()">
+                    <select id="tripFilter" onchange="filterTrips()">
+                        <option value="">All Boroughs</option>
+                        <option value="Manhattan">Manhattan</option>
+                        <option value="Brooklyn">Brooklyn</option>
+                        <option value="Queens">Queens</option>
+                        <option value="Bronx">Bronx</option>
+                        <option value="Staten Island">Staten Island</option>
+                    </select>
+                </div>
+                
+                <div class="table-container">
+                    <table id="tripsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Pickup Time</th>
+                                <th>Pickup Zone</th>
+                                <th>Dropoff Zone</th>
+                                <th>Distance</th>
+                                <th>Fare</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tripsTableBody">
+                            <tr><td colspan="7" class="loading-message">Loading trips...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="pagination" id="tripsPagination"></div>
+            </section>
+
+            <!-- Zones Management Section -->
+            <section id="zones-section" class="admin-section">
+                <div class="section-header">
+                    <h2>Zone Management</h2>
+                    <button onclick="showAddZoneModal()" class="btn-primary">
+                        <i class="fas fa-plus"></i> Add Zone
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="zonesTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Borough</th>
+                                <th>Zone Name</th>
+                                <th>Service Zone</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="zonesTableBody">
+                            <tr><td colspan="5" class="loading-message">Loading zones...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Users Management Section -->
+            <section id="users-section" class="admin-section">
+                <div class="section-header">
+                    <h2>User Management</h2>
+                    <button onclick="showAddUserModal()" class="btn-primary">
+                        <i class="fas fa-plus"></i> Add User
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="7" class="loading-message">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Audit Logs Section -->
+            <section id="audit-section" class="admin-section">
+                <h2>Audit Logs</h2>
+                <div class="table-container">
+                    <table id="auditTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Table</th>
+                                <th>Record ID</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditTableBody">
+                            <tr><td colspan="6" class="loading-message">Loading audit logs...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="auditPagination"></div>
+            </section>
+
+            <!-- Database Section -->
+            <section id="database-section" class="admin-section">
+                <h2>Database Management</h2>
+                
+                <div class="stats-grid" id="dbStats"></div>
+                
+                <div class="action-buttons">
+                    <button onclick="optimizeDatabase()" class="btn-warning">
+                        <i class="fas fa-tools"></i> Optimize Database
+                    </button>
+                    <button onclick="viewCleaningLogs()" class="btn-info">
+                        <i class="fas fa-clipboard-list"></i> View Cleaning Logs
+                    </button>
+                </div>
+                
+                <div class="table-container" id="cleaningLogsContainer" style="display:none;">
+                    <h3>Data Cleaning Logs</h3>
+                    <table id="cleaningLogsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Processed</th>
+                                <th>Valid</th>
+                                <th>Excluded</th>
+                                <th>Reasons</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cleaningLogsBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="tripModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('tripModal')">&times;</span>
+            <h3 id="tripModalTitle">Add Trip</h3>
+            <form id="tripForm" onsubmit="saveTrip(event)">
+                <input type="hidden" id="tripId">
+                <div class="form-group">
+                    <label>Pickup Datetime:</label>
+                    <input type="datetime-local" id="pickupDatetime" required>
+                </div>
+                <div class="form-group">
+                    <label>Dropoff Datetime:</label>
+                    <input type="datetime-local" id="dropoffDatetime" required>
+                </div>
+                <div class="form-group">
+                    <label>Pickup Location ID:</label>
+                    <select id="pickupLocationId" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Dropoff Location ID:</label>
+                    <select id="dropoffLocationId" required></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Distance (miles):</label>
+                        <input type="number" step="0.01" id="tripDistance" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Fare ($):</label>
+                        <input type="number" step="0.01" id="fareAmount" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tip ($):</label>
+                        <input type="number" step="0.01" id="tipAmount" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Passengers:</label>
+                        <input type="number" id="passengerCount" value="1" min="1" max="6">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Save Trip</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="zoneModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('zoneModal')">&times;</span>
+            <h3 id="zoneModalTitle">Add Zone</h3>
+            <form id="zoneForm" onsubmit="saveZone(event)">
+                <input type="hidden" id="zoneId">
+                <div class="form-group">
+                    <label>Location ID:</label>
+                    <input type="number" id="locationId" required>
+                </div>
+                <div class="form-group">
+                    <label>Borough:</label>
+                    <select id="borough" required>
+                        <option value="">Select Borough</option>
+                        <option value="Manhattan">Manhattan</option>
+                        <option value="Brooklyn">Brooklyn</option>
+                        <option value="Queens">Queens</option>
+                        <option value="Bronx">Bronx</option>
+                        <option value="Staten Island">Staten Island</option>
+                        <option value="EWR">EWR</option>
+                        <option value="Unknown">Unknown</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Zone Name:</label>
+                    <input type="text" id="zoneName" required>
+                </div>
+                <div class="form-group">
+                    <label>Service Zone:</label>
+                    <input type="text" id="serviceZone" placeholder="e.g., Boro Zone, Yellow Zone">
+                </div>
+                <button type="submit" class="btn-primary">Save Zone</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('userModal')">&times;</span>
+            <h3 id="userModalTitle">Add User</h3>
+            <form id="userForm" onsubmit="saveUser(event)">
+                <input type="hidden" id="userId">
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" id="username" required minlength="3">
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="password" minlength="6">
+                    <small>Leave blank to keep current password</small>
+                </div>
+                <div class="form-group">
+                    <label>Role:</label>
+                    <select id="role" required>
+                        <option value="viewer">Viewer</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Save User</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>
