@@ -355,4 +355,92 @@
             const zones = mockData.zones.slice(0, 10); // Show first 10 zones
             const tbody = document.getElementById('zonesTableBody');
             
-           
+            tbody.innerHTML = zones.map(zone => `
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${zone.location_id}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${zone.borough}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${zone.zone_name}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${zone.service_zone}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">
+                        <button onclick="alert('Demo: Edit zone ${zone.location_id}')" style="background: #f39c12; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; margin-right: 0.25rem;">Edit</button>
+                        <button onclick="alert('Demo: Delete zone ${zone.location_id}')" style="background: #e74c3c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Load users
+        function loadUsers() {
+            const users = mockData.users;
+            const tbody = document.getElementById('usersTableBody');
+            
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${user.user_id}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${user.username}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${user.email}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;"><span style="background: ${user.role === 'admin' ? '#e74c3c' : '#27ae60'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">${user.role}</span></td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${user.created_at}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${user.last_login}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">
+                        <button onclick="alert('Demo: Edit user ${user.user_id}')" style="background: #f39c12; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; margin-right: 0.25rem;">Edit</button>
+                        <button onclick="alert('Demo: Delete user ${user.user_id}')" style="background: #e74c3c; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px;">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Load audit logs
+        function loadAuditLogs() {
+            const logs = mockData.auditLogs;
+            const tbody = document.getElementById('auditTableBody');
+            
+            tbody.innerHTML = logs.map(log => `
+                <tr>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${log.created_at}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${log.username}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;"><span style="background: ${log.action === 'CREATE' ? '#27ae60' : log.action === 'UPDATE' ? '#f39c12' : '#e74c3c'}; color: white; padding: 0.25rem 0.5rem; border-radius: 4px;">${log.action}</span></td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${log.table_name}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${log.record_id || '-'}</td>
+                    <td style="padding: 1rem; border-bottom: 1px solid #ddd;">${log.details}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Setup charts
+        function setupCharts() {
+            const ctx = document.getElementById('dbSizeChart')?.getContext('2d');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Data Size (85MB)', 'Index Size (25MB)', 'Free Space (40MB)'],
+                        datasets: [{
+                            data: [85, 25, 40],
+                            backgroundColor: ['#4a90e2', '#f39c12', '#27ae60'],
+                            borderColor: 'white',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show first section by default
+            document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'none');
+            document.getElementById('dashboard-section').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
