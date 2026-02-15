@@ -339,5 +339,240 @@
     <script src="/frontend/js/api.js"></script>
     <script src="/frontend/js/admin.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="js/api.js"></script>
+<script>
+    // Admin Panel Logic
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAdminDashboard();
+        setupEventListeners();
+    });
+
+    let currentUser = null;
+
+    async function loadAdminDashboard() {
+        try {
+            // Check if logged in
+            const token = localStorage.getItem('token');
+            if (!token && !window.location.hash.includes('login')) {
+                showLoginModal();
+            } else {
+                loadAllData();
+            }
+        } catch (error) {
+            console.error('Error loading admin dashboard:', error);
+        }
+    }
+
+    function showLoginModal() {
+        const loginHtml = `
+            <div id="loginModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+                <div style="background: white; padding: 30px; border-radius: 10px; width: 400px;">
+                    <h2 style="margin-bottom: 20px;">Admin Login</h2>
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="loginUsername" placeholder="Username" style="width: 100%; padding: 10px;" value="admin">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <input type="password" id="loginPassword" placeholder="Password" style="width: 100%; padding: 10px;" value="admin123">
+                    </div>
+                    <button onclick="doLogin()" style="width: 100%; padding: 10px; background: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer;">Login</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', loginHtml);
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+        
+        try {
+            const result = await API.login(username, password);
+            if (result.success) {
+                document.getElementById('loginModal').remove();
+                loadAllData();
+            }
+        } catch (error) {
+            alert('Login failed: ' + error.message);
+        }
+    }
+
+    async function loadAllData() {
+        await Promise.all([
+            loadSystemStats(),
+            loadTrips(),
+            loadZones(),
+            loadUsers()
+        ]);
+    }
+
+    async function loadSystemStats() {
+        try {
+            const stats = await API.getStats();
+            const statsHtml = `
+                <div class="stat-card">
+                    <div class="stat-label">Total Trips</div>
+                    <div class="stat-value">${stats.data.total_trips.toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Revenue</div>
+                    <div class="stat-value">$${stats.data.total_revenue.toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Fare</div>
+                    <div class="stat-value">$${stats.data.avg_fare}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Days</div>
+                    <div class="stat-value">${stats.data.days_with_data}</div>
+                </div>
+            `;
+            document.getElementById('systemStats').innerHTML = statsHtml;
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+
+    async function loadTrips() {
+        try {
+            const result = await API.getTrips({ limit: 20 });
+            const tbody = document.getElementById('tripsTableBody');
+            
+            if (result.data && result.data.length > 0) {
+                tbody.innerHTML = result.data.map(trip => `
+                    <tr>
+                        <td>${trip.trip_id}</td>
+                        <td>${new Date(trip.pickup_datetime).toLocaleString()}</td>
+                        <td>${trip.pickup_zone || 'Unknown'}</td>
+                        <td>${trip.dropoff_zone || 'Unknown'}</td>
+                        <td>${trip.trip_distance} mi</td>
+                        <td>$${trip.total_amount}</td>
+                        <td>
+                            <button onclick="editTrip(${trip.trip_id})" class="btn-edit">✏️</button>
+                            <button onclick="deleteTrip(${trip.trip_id})" class="btn-delete">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading trips:', error);
+        }
+    }
+
+    async function loadZones() {
+        try {
+            const result = await API.getZones();
+            const tbody = document.getElementById('zonesTableBody');
+            
+            if (result.data && result.data.length > 0) {
+                tbody.innerHTML = result.data.slice(0, 20).map(zone => `
+                    <tr>
+                        <td>${zone.location_id}</td>
+                        <td>${zone.borough}</td>
+                        <td>${zone.zone_name}</td>
+                        <td>${zone.service_zone || '-'}</td>
+                        <td>
+                            <button onclick="editZone(${zone.location_id})" class="btn-edit">✏️</button>
+                            <button onclick="deleteZone(${zone.location_id})" class="btn-delete">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading zones:', error);
+        }
+    }
+
+    async function loadUsers() {
+        try {
+            const result = await API.getUsers();
+            const tbody = document.getElementById('usersTableBody');
+            
+            if (result.data && result.data.length > 0) {
+                tbody.innerHTML = result.data.map(user => `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.username}</td>
+                        <td>${user.email || 'user@example.com'}</td>
+                        <td><span class="badge ${user.role}">${user.role}</span></td>
+                        <td>${new Date().toLocaleDateString()}</td>
+                        <td>${new Date().toLocaleString()}</td>
+                        <td>
+                            <button onclick="editUser(${user.id})" class="btn-edit">✏️</button>
+                            <button onclick="deleteUser(${user.id})" class="btn-delete">🗑️</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+        }
+    }
+
+    function showSection(section) {
+        document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.sidebar-menu li').forEach(l => l.classList.remove('active'));
+        
+        document.getElementById(section + '-section').classList.add('active');
+        event.target.closest('li').classList.add('active');
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        location.reload();
+    }
+
+    // Trip CRUD
+    function showAddTripModal() {
+        alert('Add trip functionality - In production, this would open a form');
+    }
+
+    function editTrip(id) {
+        alert('Edit trip #' + id);
+    }
+
+    function deleteTrip(id) {
+        if (confirm('Delete trip #' + id + '?')) {
+            alert('Trip deleted');
+        }
+    }
+
+    // Zone CRUD
+    function showAddZoneModal() {
+        alert('Add zone functionality - In production, this would open a form');
+    }
+
+    function editZone(id) {
+        alert('Edit zone #' + id);
+    }
+
+    function deleteZone(id) {
+        if (confirm('Delete zone #' + id + '?')) {
+            alert('Zone deleted');
+        }
+    }
+
+    // User CRUD
+    function showAddUserModal() {
+        alert('Add user functionality - In production, this would open a form');
+    }
+
+    function editUser(id) {
+        alert('Edit user #' + id);
+    }
+
+    function deleteUser(id) {
+        if (confirm('Delete user #' + id + '?')) {
+            let users = JSON.parse(localStorage.getItem('users') || '[]');
+            users = users.filter(u => u.id != id);
+            localStorage.setItem('users', JSON.stringify(users));
+            loadUsers();
+        }
+    }
+
+    function setupEventListeners() {
+        // Add any additional event listeners here
+    }
+</script>
 </body>
 </html>
