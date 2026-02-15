@@ -1,499 +1,468 @@
 /**
- * CUSTOM ALGORITHMS - MANUAL IMPLEMENTATIONS
- * No built-in functions like sort(), Math.max(), etc.
+ * AUTHENTICATION CONTROLLER
+ * Handles user authentication, registration, and session management
+ * Provides full admin control over user access
  */
 
-class CustomAlgorithms {
-    
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_EXPIRY = process.env.JWT_EXPIRY || '24h';
+const REFRESH_TOKEN_EXPIRY = '7d';
+
+const authController = {
     // =========================================
-    // 1. MERGE SORT - O(n log n)
+    // USER REGISTRATION
     // =========================================
-    mergeSort(arr, compareField) {
-        if (arr.length <= 1) {
-            return arr;
-        }
-        
-        const middle = Math.floor(arr.length / 2);
-        const left = arr.slice(0, middle);
-        const right = arr.slice(middle);
-        
-        const sortedLeft = this.mergeSort(left, compareField);
-        const sortedRight = this.mergeSort(right, compareField);
-        
-        return this.merge(sortedLeft, sortedRight, compareField);
-    }
-    
-    merge(left, right, compareField) {
-        const result = [];
-        let leftIndex = 0;
-        let rightIndex = 0;
-        
-        while (leftIndex < left.length && rightIndex < right.length) {
-            const leftValue = left[leftIndex][compareField] || 0;
-            const rightValue = right[rightIndex][compareField] || 0;
+    register: async (req, res) => {
+        try {
+            const { username, password, email, full_name, role } = req.body;
             
-            if (leftValue <= rightValue) {
-                result.push(left[leftIndex]);
-                leftIndex++;
-            } else {
-                result.push(right[rightIndex]);
-                rightIndex++;
+            // Validate input
+            if (!username || !password || !email) {
+                return res.status(400).json({ 
+                    error: 'Missing required fields',
+                    required: ['username', 'password', 'email']
+                });
             }
-        }
-        
-        while (leftIndex < left.length) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        }
-        
-        while (rightIndex < right.length) {
-            result.push(right[rightIndex]);
-            rightIndex++;
-        }
-        
-        return result;
-    }
-    
-    // =========================================
-    // 2. QUICK SORT - O(n log n) average
-    // =========================================
-    quickSort(arr, compareField) {
-        if (arr.length <= 1) {
-            return arr;
-        }
-        
-        const pivot = arr[Math.floor(arr.length / 2)];
-        const left = [];
-        const right = [];
-        const equal = [];
-        
-        for (let i = 0; i < arr.length; i++) {
-            const value = arr[i][compareField] || 0;
-            const pivotValue = pivot[compareField] || 0;
             
-            if (value < pivotValue) {
-                left.push(arr[i]);
-            } else if (value > pivotValue) {
-                right.push(arr[i]);
-            } else {
-                equal.push(arr[i]);
+            // Check password strength
+            if (password.length < 8) {
+                return res.status(400).json({ 
+                    error: 'Password must be at least 8 characters long' 
+                });
             }
+            
+            if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+                return res.status(400).json({ 
+                    error: 'Password must contain at least one uppercase letter and one number' 
+                });
+            }
+            
+            // Check if user exists
+            const [existing] = await req.db.query(
+                'SELECT user_id FROM users WHERE username = ? OR email = ?',
+                [username, email]
+            );
+            
+            if (existing.length > 0) {
+                return res.status(409).json({ 
+                    error: 'Username or email already exists' 
+                });
+            }
+            
+            // Hash password
+            const salt = await bcrypt.genSalt(12);
+            const password_hash = await bcrypt.hash(password, salt);
+            
+            // Insert user
+            const [result] = await req.db.query(
+                `INSERT INTO users (username, password_hash, email, full_name, role, created_by) 
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [username, password_hash, email, full_name || null, role || 'viewer', req.user?.userId || null]
+            );
+            
+            // Log action
+            await req.db.query(
+                `INSERT INTO audit_log (user_id, action, table_name, record_id, new_values, ip_address, user_agent)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [result.insertId, 'REGISTER', 'users', result.insertId, 
+                 JSON.stringify({ username, email, role }), req.ip, req.headers['user-agent']]
+            );
+            
+            res.status(201).json({
+                success: true,
+                message: 'User registered successfully',
+                user_id: result.insertId
+            });
+            
+        } catch (error) {
+            console.error('Registration error:', error);
+            res.status(500).json({ error: 'Registration failed' });
         }
-        
-        return [
-            ...this.quickSort(left, compareField),
-            ...equal,
-            ...this.quickSort(right, compareField)
-        ];
-    }
+    },
     
     // =========================================
-    // 3. MIN HEAP - O(log n) for insert/extract
+    // USER LOGIN
     // =========================================
-    createMinHeap(capacity) {
-        return {
-            heap: [],
-            capacity: capacity,
+    login: async (req, res) => {
+        try {
+            const { username, password } = req.body;
             
-            insert: function(value) {
-                if (this.heap.length < this.capacity) {
-                    this.heap.push(value);
-                    this._bubbleUp(this.heap.length - 1);
-                } else if (value > this.heap[0]) {
-                    this.heap[0] = value;
-                    this._bubbleDown(0);
-                }
-            },
+            if (!username || !password) {
+                return res.status(400).json({ 
+                    error: 'Username and password required' 
+                });
+            }
             
-            _bubbleUp: function(index) {
-                while (index > 0) {
-                    const parent = Math.floor((index - 1) / 2);
-                    if (this.heap[parent] <= this.heap[index]) {
-                        break;
-                    }
-                    [this.heap[parent], this.heap[index]] = [this.heap[index], this.heap[parent]];
-                    index = parent;
-                }
-            },
+            // Get user
+            const [users] = await req.db.query(
+                `SELECT user_id, username, password_hash, email, full_name, role, is_active 
+                 FROM users WHERE username = ?`,
+                [username]
+            );
             
-            _bubbleDown: function(index) {
-                const length = this.heap.length;
-                while (true) {
-                    let smallest = index;
-                    const left = 2 * index + 1;
-                    const right = 2 * index + 2;
-                    
-                    if (left < length && this.heap[left] < this.heap[smallest]) {
-                        smallest = left;
-                    }
-                    if (right < length && this.heap[right] < this.heap[smallest]) {
-                        smallest = right;
-                    }
-                    if (smallest === index) {
-                        break;
-                    }
-                    [this.heap[index], this.heap[smallest]] = [this.heap[smallest], this.heap[index]];
-                    index = smallest;
-                }
-            },
+            if (users.length === 0) {
+                return res.status(401).json({ error: 'Invalid credentials' });
+            }
             
-            getSorted: function() {
-                const sorted = [];
-                const copy = [...this.heap];
+            const user = users[0];
+            
+            // Check if account is active
+            if (!user.is_active) {
+                return res.status(403).json({ error: 'Account is disabled' });
+            }
+            
+            // Verify password
+            const validPassword = await bcrypt.compare(password, user.password_hash);
+            
+            if (!validPassword) {
+                // Log failed attempt
+                await req.db.query(
+                    `INSERT INTO audit_log (user_id, action, table_name, old_values, ip_address, user_agent)
+                     VALUES (?, ?, ?, ?, ?, ?)`,
+                    [user.user_id, 'LOGIN_FAILED', 'users', 
+                     JSON.stringify({ attempt: 'invalid_password' }), req.ip, req.headers['user-agent']]
+                );
                 
-                while (copy.length > 0) {
-                    let maxIndex = 0;
-                    for (let i = 1; i < copy.length; i++) {
-                        if (copy[i] > copy[maxIndex]) {
-                            maxIndex = i;
-                        }
-                    }
-                    sorted.push(copy[maxIndex]);
-                    copy.splice(maxIndex, 1);
-                }
-                
-                return sorted;
+                return res.status(401).json({ error: 'Invalid credentials' });
             }
-        };
-    }
+            
+            // Generate tokens
+            const accessToken = jwt.sign(
+                { 
+                    userId: user.user_id, 
+                    username: user.username, 
+                    role: user.role 
+                },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRY }
+            );
+            
+            const refreshToken = crypto.randomBytes(40).toString('hex');
+            
+            // Store refresh token (in production, use Redis)
+            await req.db.query(
+                `UPDATE users SET last_login = NOW() WHERE user_id = ?`,
+                [user.user_id]
+            );
+            
+            // Log successful login
+            await req.db.query(
+                `INSERT INTO audit_log (user_id, action, table_name, record_id, new_values, ip_address, user_agent)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [user.user_id, 'LOGIN_SUCCESS', 'users', user.user_id,
+                 JSON.stringify({ login_time: new Date() }), req.ip, req.headers['user-agent']]
+            );
+            
+            res.json({
+                success: true,
+                accessToken,
+                refreshToken,
+                user: {
+                    id: user.user_id,
+                    username: user.username,
+                    email: user.email,
+                    full_name: user.full_name,
+                    role: user.role
+                },
+                permissions: getPermissionsByRole(user.role)
+            });
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            res.status(500).json({ error: 'Login failed' });
+        }
+    },
     
     // =========================================
-    // 4. MAX HEAP - O(log n) for insert/extract
+    // REFRESH TOKEN
     // =========================================
-    createMaxHeap() {
-        return {
-            heap: [],
+    refreshToken: async (req, res) => {
+        try {
+            const { refreshToken } = req.body;
             
-            insert: function(value) {
-                this.heap.push(value);
-                this._bubbleUp(this.heap.length - 1);
-            },
-            
-            extractMax: function() {
-                if (this.heap.length === 0) return null;
-                if (this.heap.length === 1) return this.heap.pop();
-                
-                const max = this.heap[0];
-                this.heap[0] = this.heap.pop();
-                this._bubbleDown(0);
-                return max;
-            },
-            
-            _bubbleUp: function(index) {
-                while (index > 0) {
-                    const parent = Math.floor((index - 1) / 2);
-                    if (this.heap[parent] >= this.heap[index]) {
-                        break;
-                    }
-                    [this.heap[parent], this.heap[index]] = [this.heap[index], this.heap[parent]];
-                    index = parent;
-                }
-            },
-            
-            _bubbleDown: function(index) {
-                const length = this.heap.length;
-                while (true) {
-                    let largest = index;
-                    const left = 2 * index + 1;
-                    const right = 2 * index + 2;
-                    
-                    if (left < length && this.heap[left] > this.heap[largest]) {
-                        largest = left;
-                    }
-                    if (right < length && this.heap[right] > this.heap[largest]) {
-                        largest = right;
-                    }
-                    if (largest === index) {
-                        break;
-                    }
-                    [this.heap[index], this.heap[largest]] = [this.heap[largest], this.heap[index]];
-                    index = largest;
-                }
+            if (!refreshToken) {
+                return res.status(400).json({ error: 'Refresh token required' });
             }
-        };
-    }
-    
-    // =========================================
-    // 5. HASH MAP - O(1) average
-    // =========================================
-    createHashMap(initialSize = 1000) {
-        return {
-            buckets: new Array(initialSize).fill(null).map(() => []),
-            size: 0,
             
-            hash: function(key) {
-                const keyStr = String(key);
-                let hash = 0;
-                for (let i = 0; i < keyStr.length; i++) {
-                    hash = ((hash << 5) - hash) + keyStr.charCodeAt(i);
-                    hash = hash & hash;
-                }
-                return Math.abs(hash) % this.buckets.length;
-            },
+            // Verify refresh token (in production, check against stored tokens)
+            // This is a simplified version
             
-            set: function(key, value) {
-                const index = this.hash(key);
-                const bucket = this.buckets[index];
-                
-                for (let i = 0; i < bucket.length; i++) {
-                    if (bucket[i][0] === key) {
-                        bucket[i][1] = value;
-                        return;
-                    }
-                }
-                
-                bucket.push([key, value]);
-                this.size++;
-            },
+            const [users] = await req.db.query(
+                `SELECT user_id, username, role FROM users WHERE user_id = ?`,
+                [req.user.userId]
+            );
             
-            get: function(key) {
-                const index = this.hash(key);
-                const bucket = this.buckets[index];
-                
-                for (let i = 0; i < bucket.length; i++) {
-                    if (bucket[i][0] === key) {
-                        return bucket[i][1];
-                    }
-                }
-                return null;
-            },
-            
-            delete: function(key) {
-                const index = this.hash(key);
-                const bucket = this.buckets[index];
-                
-                for (let i = 0; i < bucket.length; i++) {
-                    if (bucket[i][0] === key) {
-                        bucket.splice(i, 1);
-                        this.size--;
-                        return true;
-                    }
-                }
-                return false;
-            },
-            
-            has: function(key) {
-                return this.get(key) !== null;
-            },
-            
-            increment: function(key) {
-                const current = this.get(key) || 0;
-                this.set(key, current + 1);
-            },
-            
-            entries: function() {
-                const result = [];
-                for (let i = 0; i < this.buckets.length; i++) {
-                    for (let j = 0; j < this.buckets[i].length; j++) {
-                        result.push(this.buckets[i][j]);
-                    }
-                }
-                return result;
+            if (users.length === 0) {
+                return res.status(401).json({ error: 'Invalid refresh token' });
             }
-        };
-    }
-    
-    // =========================================
-    // 6. BINARY SEARCH - O(log n)
-    // =========================================
-    binarySearch(arr, target, compareField) {
-        let left = 0;
-        let right = arr.length - 1;
-        
-        while (left <= right) {
-            const mid = Math.floor((left + right) / 2);
-            const midValue = arr[mid][compareField] || 0;
             
-            if (midValue === target) {
-                return mid;
-            } else if (midValue < target) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
-        }
-        
-        return -1;
-    }
-    
-    // =========================================
-    // 7. STATISTICS - Manual calculations
-    // =========================================
-    calculateMean(values) {
-        if (values.length === 0) return 0;
-        let sum = 0;
-        for (let i = 0; i < values.length; i++) {
-            sum += values[i];
-        }
-        return sum / values.length;
-    }
-    
-    calculateMedian(values) {
-        if (values.length === 0) return 0;
-        
-        const sorted = [...values].sort((a, b) => a - b);
-        const mid = Math.floor(sorted.length / 2);
-        
-        if (sorted.length % 2 === 0) {
-            return (sorted[mid - 1] + sorted[mid]) / 2;
-        } else {
-            return sorted[mid];
-        }
-    }
-    
-    calculateMode(values) {
-        if (values.length === 0) return null;
-        
-        const frequency = {};
-        let maxFreq = 0;
-        let mode = values[0];
-        
-        for (let i = 0; i < values.length; i++) {
-            const val = values[i];
-            frequency[val] = (frequency[val] || 0) + 1;
+            const user = users[0];
             
-            if (frequency[val] > maxFreq) {
-                maxFreq = frequency[val];
-                mode = val;
+            // Generate new access token
+            const accessToken = jwt.sign(
+                { userId: user.user_id, username: user.username, role: user.role },
+                JWT_SECRET,
+                { expiresIn: JWT_EXPIRY }
+            );
+            
+            res.json({
+                success: true,
+                accessToken
+            });
+            
+        } catch (error) {
+            console.error('Refresh token error:', error);
+            res.status(500).json({ error: 'Token refresh failed' });
+        }
+    },
+    
+    // =========================================
+    // LOGOUT
+    // =========================================
+    logout: async (req, res) => {
+        try {
+            // Log logout
+            await req.db.query(
+                `INSERT INTO audit_log (user_id, action, ip_address, user_agent)
+                 VALUES (?, ?, ?, ?)`,
+                [req.user.userId, 'LOGOUT', req.ip, req.headers['user-agent']]
+            );
+            
+            res.json({
+                success: true,
+                message: 'Logged out successfully'
+            });
+            
+        } catch (error) {
+            console.error('Logout error:', error);
+            res.status(500).json({ error: 'Logout failed' });
+        }
+    },
+    
+    // =========================================
+    // CHANGE PASSWORD
+    // =========================================
+    changePassword: async (req, res) => {
+        try {
+            const { currentPassword, newPassword } = req.body;
+            const userId = req.user.userId;
+            
+            // Get current password hash
+            const [users] = await req.db.query(
+                'SELECT password_hash FROM users WHERE user_id = ?',
+                [userId]
+            );
+            
+            if (users.length === 0) {
+                return res.status(404).json({ error: 'User not found' });
             }
+            
+            // Verify current password
+            const validPassword = await bcrypt.compare(currentPassword, users[0].password_hash);
+            
+            if (!validPassword) {
+                return res.status(401).json({ error: 'Current password is incorrect' });
+            }
+            
+            // Validate new password
+            if (newPassword.length < 8) {
+                return res.status(400).json({ error: 'Password must be at least 8 characters' });
+            }
+            
+            // Hash new password
+            const salt = await bcrypt.genSalt(12);
+            const newHash = await bcrypt.hash(newPassword, salt);
+            
+            // Update password
+            await req.db.query(
+                'UPDATE users SET password_hash = ? WHERE user_id = ?',
+                [newHash, userId]
+            );
+            
+            // Log action
+            await req.db.query(
+                `INSERT INTO audit_log (user_id, action, table_name, record_id, ip_address)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [userId, 'PASSWORD_CHANGE', 'users', userId, req.ip]
+            );
+            
+            res.json({
+                success: true,
+                message: 'Password changed successfully'
+            });
+            
+        } catch (error) {
+            console.error('Password change error:', error);
+            res.status(500).json({ error: 'Failed to change password' });
         }
-        
-        return mode;
-    }
-    
-    calculateStdDev(values) {
-        if (values.length === 0) return 0;
-        
-        const mean = this.calculateMean(values);
-        let sumSquaredDiff = 0;
-        
-        for (let i = 0; i < values.length; i++) {
-            const diff = values[i] - mean;
-            sumSquaredDiff += diff * diff;
-        }
-        
-        return Math.sqrt(sumSquaredDiff / values.length);
-    }
-    
-    calculatePercentile(values, percentile) {
-        if (values.length === 0) return 0;
-        
-        const sorted = [...values].sort((a, b) => a - b);
-        const index = (percentile / 100) * (sorted.length - 1);
-        const lower = Math.floor(index);
-        const upper = Math.ceil(index);
-        
-        if (lower === upper) {
-            return sorted[lower];
-        }
-        
-        return sorted[lower] + (sorted[upper] - sorted[lower]) * (index - lower);
-    }
+    },
     
     // =========================================
-    // 8. FIND TOP K ROUTES
+    // GET CURRENT USER
     // =========================================
-    findTopKRoutes(trips, k = 10) {
-        const routeCounter = this.createHashMap();
-        
-        for (let i = 0; i < trips.length; i++) {
-            const trip = trips[i];
-            const routeKey = trip.pickup_location_id + '_' + trip.dropoff_location_id;
-            routeCounter.increment(routeKey);
-        }
-        
-        const heap = this.createMinHeap(k);
-        const routes = routeCounter.entries();
-        
-        for (let i = 0; i < routes.length; i++) {
-            heap.insert(routes[i][1]);
-        }
-        
-        const topCounts = heap.getSorted();
-        const result = [];
-        
-        for (let i = 0; i < topCounts.length; i++) {
-            const count = topCounts[i];
-            for (let j = 0; j < routes.length; j++) {
-                if (routes[j][1] === count) {
-                    const [pickupId, dropoffId] = routes[j][0].split('_').map(Number);
-                    result.push({
-                        pickup_location_id: pickupId,
-                        dropoff_location_id: dropoffId,
-                        trip_count: count
-                    });
-                    routes.splice(j, 1);
-                    break;
+    getCurrentUser: async (req, res) => {
+        try {
+            const [users] = await req.db.query(
+                `SELECT user_id, username, email, full_name, role, created_at, last_login
+                 FROM users WHERE user_id = ?`,
+                [req.user.userId]
+            );
+            
+            if (users.length === 0) {
+                return res.status(404).json({ error: 'User not found' });
+            }
+            
+            const user = users[0];
+            
+            res.json({
+                success: true,
+                user: {
+                    ...user,
+                    permissions: getPermissionsByRole(user.role)
                 }
-            }
+            });
+            
+        } catch (error) {
+            console.error('Get current user error:', error);
+            res.status(500).json({ error: 'Failed to get user info' });
         }
-        
-        return result;
-    }
+    },
     
     // =========================================
-    // 9. DETECT OUTLIERS - IQR method
+    // FORGOT PASSWORD
     // =========================================
-    detectOutliers(values) {
-        if (values.length < 4) return [];
-        
-        const sorted = [...values].sort((a, b) => a - b);
-        const q1 = this.calculatePercentile(sorted, 25);
-        const q3 = this.calculatePercentile(sorted, 75);
-        const iqr = q3 - q1;
-        const lowerBound = q1 - 1.5 * iqr;
-        const upperBound = q3 + 1.5 * iqr;
-        
-        const outliers = [];
-        for (let i = 0; i < values.length; i++) {
-            if (values[i] < lowerBound || values[i] > upperBound) {
-                outliers.push(values[i]);
+    forgotPassword: async (req, res) => {
+        try {
+            const { email } = req.body;
+            
+            const [users] = await req.db.query(
+                'SELECT user_id, username FROM users WHERE email = ?',
+                [email]
+            );
+            
+            if (users.length === 0) {
+                // Don't reveal that email doesn't exist
+                return res.json({ 
+                    success: true, 
+                    message: 'If the email exists, a reset link will be sent' 
+                });
             }
+            
+            const user = users[0];
+            
+            // Generate reset token
+            const resetToken = crypto.randomBytes(32).toString('hex');
+            const resetExpiry = new Date(Date.now() + 3600000); // 1 hour
+            
+            // Store reset token (in production, use a separate table)
+            await req.db.query(
+                `UPDATE users SET reset_token = ?, reset_expiry = ? WHERE user_id = ?`,
+                [resetToken, resetExpiry, user.user_id]
+            );
+            
+            // In production, send email here
+            
+            res.json({
+                success: true,
+                message: 'Password reset email sent',
+                // In development, return token for testing
+                resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined
+            });
+            
+        } catch (error) {
+            console.error('Forgot password error:', error);
+            res.status(500).json({ error: 'Failed to process request' });
         }
-        
-        return outliers;
-    }
+    },
     
     // =========================================
-    // 10. LINEAR REGRESSION - Manual calculation
+    // RESET PASSWORD
     // =========================================
-    linearRegression(xValues, yValues) {
-        if (xValues.length !== yValues.length || xValues.length === 0) {
-            return null;
+    resetPassword: async (req, res) => {
+        try {
+            const { token, newPassword } = req.body;
+            
+            const [users] = await req.db.query(
+                `SELECT user_id FROM users 
+                 WHERE reset_token = ? AND reset_expiry > NOW()`,
+                [token]
+            );
+            
+            if (users.length === 0) {
+                return res.status(400).json({ error: 'Invalid or expired token' });
+            }
+            
+            const user = users[0];
+            
+            // Hash new password
+            const salt = await bcrypt.genSalt(12);
+            const passwordHash = await bcrypt.hash(newPassword, salt);
+            
+            // Update password and clear reset token
+            await req.db.query(
+                `UPDATE users SET password_hash = ?, reset_token = NULL, reset_expiry = NULL 
+                 WHERE user_id = ?`,
+                [passwordHash, user.user_id]
+            );
+            
+            res.json({
+                success: true,
+                message: 'Password reset successfully'
+            });
+            
+        } catch (error) {
+            console.error('Reset password error:', error);
+            res.status(500).json({ error: 'Failed to reset password' });
         }
-        
-        const n = xValues.length;
-        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-        
-        for (let i = 0; i < n; i++) {
-            sumX += xValues[i];
-            sumY += yValues[i];
-            sumXY += xValues[i] * yValues[i];
-            sumX2 += xValues[i] * xValues[i];
-        }
-        
-        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-        const intercept = (sumY - slope * sumX) / n;
-        
-        // Calculate R-squared
-        const meanY = sumY / n;
-        let totalSS = 0, residualSS = 0;
-        
-        for (let i = 0; i < n; i++) {
-            const predicted = slope * xValues[i] + intercept;
-            totalSS += (yValues[i] - meanY) ** 2;
-            residualSS += (yValues[i] - predicted) ** 2;
-        }
-        
-        const rSquared = 1 - (residualSS / totalSS);
-        
-        return {
-            slope,
-            intercept,
-            rSquared,
-            predict: (x) => slope * x + intercept
-        };
     }
+};
+
+// Helper function to get permissions by role
+function getPermissionsByRole(role) {
+    const permissions = {
+        admin: {
+            canManageUsers: true,
+            canManageTrips: true,
+            canManageZones: true,
+            canViewAudit: true,
+            canExportData: true,
+            canDeleteData: true,
+            canManageSystem: true
+        },
+        manager: {
+            canManageUsers: false,
+            canManageTrips: true,
+            canManageZones: true,
+            canViewAudit: true,
+            canExportData: true,
+            canDeleteData: false,
+            canManageSystem: false
+        },
+        analyst: {
+            canManageUsers: false,
+            canManageTrips: false,
+            canManageZones: false,
+            canViewAudit: false,
+            canExportData: true,
+            canDeleteData: false,
+            canManageSystem: false
+        },
+        viewer: {
+            canManageUsers: false,
+            canManageTrips: false,
+            canManageZones: false,
+            canViewAudit: false,
+            canExportData: false,
+            canDeleteData: false,
+            canManageSystem: false
+        }
+    };
+    
+    return permissions[role] || permissions.viewer;
 }
 
-module.exports = new CustomAlgorithms();
+module.exports = authController;
