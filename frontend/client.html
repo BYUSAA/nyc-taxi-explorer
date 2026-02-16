@@ -84,7 +84,7 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">🚕 NYC Taxi - Client Portal</div>
+        <div class="nav-brand">NYC Taxi - Client Portal</div>
         <div class="nav-links">
             <a href="index.html">Dashboard</a>
             <a href="driver.html">Driver</a>
@@ -160,7 +160,7 @@
 
         <!-- Popular Destinations -->
         <div class="insights-section">
-            <h2>🔥 Popular Destinations</h2>
+            <h2>Popular Destinations</h2>
             <div class="insights-grid">
                 <div class="insight-card" onclick="setDestination('JFK Airport')">
                     <i class="fas fa-plane fa-2x"></i>
@@ -187,7 +187,7 @@
 
         <!-- Recent Trips -->
         <div class="trip-history">
-            <h2>📜 Your Recent Trips</h2>
+            <h2>Your Recent Trips</h2>
             <div id="clientRecentTrips">
                 <!-- Dynamic content -->
             </div>
@@ -195,7 +195,7 @@
 
         <!-- Favorite Drivers -->
         <div class="insights-section">
-            <h2>⭐ Favorite Drivers</h2>
+            <h2>Favorite Drivers</h2>
             <div class="insights-grid" id="favoriteDrivers">
                 <!-- Dynamic content -->
             </div>
@@ -323,18 +323,36 @@
             favDrivers.innerHTML = `
                 <div class="insight-card">
                     <h3>Michael</h3>
-                    <div class="rating">⭐⭐⭐⭐⭐</div>
+                    <div class="rating"></div>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
                     <p>4.9 • 1,234 trips</p>
                 </div>
                 <div class="insight-card">
                     <h3>Sarah</h3>
-                    <div class="rating">⭐⭐⭐⭐⭐</div>
+                    <div class="rating"></div>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
                     <p>4.8 • 987 trips</p>
                 </div>
                 <div class="insight-card">
                     <h3>David</h3>
-                    <div class="rating">⭐⭐⭐⭐</div>
-                    <p>4.7 • 756 trips</p>
+                    <div class="rating"></div>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p>4.8 • 987 trips</p>
                 </div>
             `;
         }
