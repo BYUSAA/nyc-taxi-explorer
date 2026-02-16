@@ -15,7 +15,7 @@
         }
         
         .driver-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #454856 0%, #1c1721 100%);
             color: white;
             padding: 20px;
             border-radius: 10px;
@@ -46,7 +46,7 @@
         }
         
         .accept-btn {
-            background: #27ae60;
+            background: #003d1a;
             color: white;
             border: none;
             padding: 8px 15px;
@@ -56,7 +56,7 @@
         }
         
         .decline-btn {
-            background: #e74c3c;
+            background: #7b0c00;
             color: white;
             border: none;
             padding: 8px 15px;
@@ -85,7 +85,7 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="nav-brand">🚕 NYC Taxi - Driver Portal</div>
+        <div class="nav-brand"> NYC Taxi - Driver Portal</div>
         <div class="nav-links">
             <a href="index.html">Dashboard</a>
             <a href="driver.html" class="active">Driver</a>
@@ -97,7 +97,7 @@
     <div class="container">
         <div class="section-header">
             <h1>Driver Dashboard</h1>
-            <button id="onlineToggle" class="online-toggle">🟢 ONLINE</button>
+            <button id="onlineToggle" class="online-toggle">ONLINE</button>
         </div>
         
         <!-- Driver Stats -->
@@ -118,7 +118,7 @@
                 <i class="fas fa-star fa-2x"></i>
                 <h3>Rating</h3>
                 <h2 id="driverRating">4.9</h2>
-                <small>⭐ 128 ratings</small>
+                <small>128 ratings</small>
             </div>
             <div class="driver-card">
                 <i class="fas fa-clock fa-2x"></i>
@@ -131,7 +131,7 @@
         <div class="charts-row">
             <!-- Map Section -->
             <div class="chart-card">
-                <h3>📍 Your Location (Live)</h3>
+                <h3>Your Location (Live)</h3>
                 <div class="map-placeholder">
                     <div style="text-align: center">
                         <i class="fas fa-map-marked-alt fa-3x"></i>
@@ -143,7 +143,7 @@
 
             <!-- Ride Requests -->
             <div class="chart-card">
-                <h3>🚖 Live Ride Requests</h3>
+                <h3>Live Ride Requests</h3>
                 <div id="rideRequests">
                     <!-- Dynamic ride requests will appear here -->
                 </div>
@@ -153,13 +153,13 @@
         <div class="charts-row">
             <!-- Earnings Chart -->
             <div class="chart-card">
-                <h3>📊 Weekly Earnings</h3>
+                <h3>Weekly Earnings</h3>
                 <canvas id="driverEarningsChart"></canvas>
             </div>
 
             <!-- Recent Trips -->
             <div class="chart-card">
-                <h3>📜 Recent Trips</h3>
+                <h3>Recent Trips</h3>
                 <div id="recentTripsList" style="max-height: 300px; overflow-y: auto;">
                     <!-- Dynamic trips will appear here -->
                 </div>
@@ -168,7 +168,7 @@
 
         <!-- Driver Tips -->
         <div class="insights-section">
-            <h2>💡 Driver Tips</h2>
+            <h2>Driver Tips</h2>
             <div class="insights-grid" id="driverTips">
                 <div class="insight-card">
                     <div class="insight-title">Rush Hour Premium</div>
@@ -202,10 +202,10 @@
             toggleBtn.addEventListener('click', function() {
                 isOnline = !isOnline;
                 if (isOnline) {
-                    this.textContent = '🟢 ONLINE';
+                    this.textContent = 'ONLINE';
                     this.classList.remove('offline');
                 } else {
-                    this.textContent = '🔴 OFFLINE';
+                    this.textContent = 'OFFLINE';
                     this.classList.add('offline');
                 }
             });
@@ -254,9 +254,9 @@
                         <span>${req.eta} away</span>
                     </div>
                     <div style="margin-bottom: 10px;">
-                        <div><small>📍 FROM: ${req.pickup}</small></div>
-                        <div><small>🏁 TO: ${req.dropoff}</small></div>
-                        <div><small>📏 ${req.distance}</small></div>
+                        <div><small> FROM: ${req.pickup}</small></div>
+                        <div><small> TO: ${req.dropoff}</small></div>
+                        <div><small> ${req.distance}</small></div>
                     </div>
                     <div>
                         <button class="accept-btn" onclick="acceptRide(${req.id})">✓ Accept</button>
